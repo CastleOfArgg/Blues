@@ -1,0 +1,158 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://Scripts/Level.cs" type="Script" id=1]
+[ext_resource path="res://Scenes/Person.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Scripts/Player.cs" type="Script" id=3]
+
+[sub_resource type="BoxShape" id=1]
+
+extents = Vector3( 1, 1, 1 )
+
+[sub_resource type="CubeMesh" id=2]
+
+custom_aabb = AABB( 0, 0, 0, 0, 0, 0 )
+size = Vector3( 2, 2, 2 )
+subdivide_width = 0
+subdivide_height = 0
+subdivide_depth = 0
+
+[sub_resource type="CapsuleMesh" id=3]
+
+custom_aabb = AABB( 0, 0, 0, 0, 0, 0 )
+radius = 1.0
+mid_height = 1.0
+radial_segments = 64
+rings = 8
+
+[node name="Root" type="Node" index="0"]
+
+script = ExtResource( 1 )
+
+[node name="Scenery" type="Node" parent="." index="0"]
+
+[node name="Ground" type="StaticBody" parent="Scenery" index="0"]
+
+transform = Transform( 100, 0, 0, 0, 1, 0, 0, 0, 100, 0, -1, 0 )
+input_ray_pickable = true
+input_capture_on_drag = false
+collision_layer = 1
+collision_mask = 1
+friction = 1.0
+bounce = 0.0
+constant_linear_velocity = Vector3( 0, 0, 0 )
+constant_angular_velocity = Vector3( 0, 0, 0 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="CollisionShape" type="CollisionShape" parent="Scenery/Ground" index="0"]
+
+shape = SubResource( 1 )
+disabled = false
+_sections_unfolded = [ "Transform" ]
+
+[node name="Mesh" type="MeshInstance" parent="Scenery/Ground" index="1"]
+
+layers = 1
+material_override = null
+cast_shadow = 1
+extra_cull_margin = 0.0
+use_in_baked_light = false
+lod_min_distance = 0.0
+lod_min_hysteresis = 0.0
+lod_max_distance = 0.0
+lod_max_hysteresis = 0.0
+mesh = SubResource( 2 )
+skeleton = NodePath("..")
+material/0 = null
+_sections_unfolded = [ "Transform", "material" ]
+
+[node name="WayPoints" type="Node" parent="." index="1"]
+
+editor/display_folded = true
+
+[node name="Way1" type="Spatial" parent="WayPoints" index="0"]
+
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 4.0396, 0, 0 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Way2" type="Spatial" parent="WayPoints" index="1"]
+
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0685, 0, 0 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Way3" type="Spatial" parent="WayPoints" index="2"]
+
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0685, 0, -10.3328 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Way4" type="Spatial" parent="WayPoints" index="3"]
+
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 10.0207, 0, -10.3328 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Characters" type="Node" parent="." index="2"]
+
+[node name="Player" parent="Characters" index="0" instance=ExtResource( 2 )]
+
+transform = Transform( 10, 0, 1.74846e-006, 0, 10, 0, -1.74846e-006, 0, 10, 0, 0, 0 )
+script = ExtResource( 3 )
+State = 0
+Civ = 1
+Health = 100
+
+[node name="Camera" type="Camera" parent="Characters/Player" index="3"]
+
+transform = Transform( -1, 0, -8.74228e-008, 0, 1, 0, 8.74228e-008, 0, -1, -0.00367901, 0.187671, 0.0316186 )
+keep_aspect = 1
+cull_mask = 1048575
+environment = null
+h_offset = 0.0
+v_offset = 0.0
+doppler_tracking = 0
+projection = 0
+current = false
+fov = 70.0
+size = 1.0
+near = 0.05
+far = 100.0
+_sections_unfolded = [ "Transform" ]
+
+[node name="Person" parent="Characters" index="1" instance=ExtResource( 2 )]
+
+transform = Transform( -4.37114e-007, 0, 10, 0, 10, 0, -10, 0, -4.37114e-007, 0, 0, 4.65321 )
+Health = 10
+
+[node name="MeshInstance" type="MeshInstance" parent="Characters" index="2"]
+
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 4 )
+layers = 1
+material_override = null
+cast_shadow = 1
+extra_cull_margin = 0.0
+use_in_baked_light = false
+lod_min_distance = 0.0
+lod_min_hysteresis = 0.0
+lod_max_distance = 0.0
+lod_max_hysteresis = 0.0
+mesh = SubResource( 3 )
+skeleton = NodePath("..")
+material/0 = null
+_sections_unfolded = [ "Transform" ]
+
+[node name="Camera" type="Camera" parent="." index="3"]
+
+transform = Transform( -1, 0, -8.74228e-008, 0, 1, 0, 8.74228e-008, 0, -1, 0, 2.73044, -4.78067 )
+keep_aspect = 1
+cull_mask = 1048575
+environment = null
+h_offset = 0.0
+v_offset = 0.0
+doppler_tracking = 0
+projection = 0
+current = true
+fov = 70.0
+size = 1.0
+near = 0.05
+far = 100.0
+_sections_unfolded = [ "Transform" ]
+
+
