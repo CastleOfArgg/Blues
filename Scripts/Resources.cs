@@ -4,6 +4,12 @@ public static class Resources
 {
     public static bool Debugging = true;
 
+    //Paths
+    public static string ScenePath = "res://Scenes/";
+    public static string MeshPath = "res://Meshes/";
+    public static string PersonAnimationPath = MeshPath + "Man_001/Animation/";
+
+    //movement
     public static float MAX_SLOPE_ANGLE = 40f;
     public static float WaypointDistance = 1f;
 
@@ -21,5 +27,5 @@ public static class Resources
     public static Vector2 CameraSpeed = new Vector2(2, 1);
 
     //attacks
-    public static float MeleeDistance = 2f;
+    public static float MeleeDistance = .4f;
 }

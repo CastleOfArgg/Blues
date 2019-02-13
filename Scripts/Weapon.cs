@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-public class Weapon : MeshInstance
+public class Weapon : Spatial
 {
     [Export]
     public bool IsMelee = true;
@@ -28,6 +28,8 @@ public class Weapon : MeshInstance
         else
         {
             Shoot();
+            Anim.Play("Fire");
+            //TODO add fire (particals)
         }
     }
 
@@ -45,4 +47,12 @@ public class Weapon : MeshInstance
     {
 
     }
+
+    public void Copy(Weapon other)
+    {
+        IsMelee = other.IsMelee;
+        Ammo = other.Ammo;
+        IsLoaded = other.IsLoaded;
+        Damage = other.Damage;
+}
 }

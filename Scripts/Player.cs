@@ -7,25 +7,28 @@ public class Player : Person
 
     public override void _Ready()
     {
+        PickupRequirement = PickupArea.REQ.PLAYER_ONLY;
+
         ACCEL = Resources.PLAYERACCEL;
         DEACCEL = Resources.PLAYERDEACCEL;
         WalkSpeed = Resources.PlayerWalkSpeed;
         RunSpeed = Resources.PlayerRunSpeed;
         Camera = (Camera)GetNode("./Camera");
-        Player = (AnimationPlayer)GetNode("AnimationPlayer");
-        ChangeState(STATE.PLAYER);
+
+        State = STATE.PLAYER;
+
         Input.SetMouseMode(Input.MouseMode.Captured);
 
         //add if statement if networking
         Camera.SetCurrent(true);
 
-        Player.SetCurrentAnimation("Idle");
+        Init();
     }
 
     public override void _PhysicsProcess(float delta)
     {
         var Movement = new Vector3(0, 0, 0);
-        
+
         if (Input.IsActionPressed("Walk_Forward"))
             Movement.x++;
         if (Input.IsActionPressed("Walk_Backward"))
@@ -34,8 +37,28 @@ public class Player : Person
             Movement.z--;
         if (Input.IsActionPressed("Walk_Left"))
             Movement.z++;
-
         MoveCharacter(delta, Movement);
+
+        //set ClosestPickup if any from Pickups (pickups in range)
+        var itemDist = -1f;
+        ClosestPickup = null;
+        foreach (var item in PickupsInArea)
+        {
+            if (ClosestPickup == null)
+            {
+                ClosestPickup = item;
+                itemDist = item.GlobalTransform.origin.DistanceTo(Transform.origin);
+            }
+            else
+            {
+                var temp = item.GlobalTransform.origin.DistanceTo(Transform.origin);
+                if (temp < itemDist)
+                {
+                    ClosestPickup = item;
+                    itemDist = temp;
+                }
+            }
+        }
     }
 
     public override void _Input(InputEvent @event)
@@ -45,12 +68,35 @@ public class Player : Person
             if (@event.IsActionPressed("Quit"))
                 GetTree().Quit();
 
+            if (@event.IsActionPressed("Reload"))
+                Globals.Instance.ReloadLevel();
+
+            if (@event.IsActionPressed("change_camera"))
+            {
+                if (((Camera)GetNode("Camera")).Current)
+                {
+                    ((Camera)GetTree().GetRoot().GetNode("Root/Camera")).Current = true;
+                }
+                else
+                {
+                    ((Camera)GetNode("Camera")).Current = true;
+                }
+            }
+
             if (@event.IsActionPressed("ToggleMouse"))
             {
                 if (Input.GetMouseMode() == Input.MouseMode.Captured)
                     Input.SetMouseMode(Input.MouseMode.Visible);
                 else
                     Input.SetMouseMode(Input.MouseMode.Captured);
+            }
+        }
+
+        if (@event.IsActionPressed("Interact"))
+        {
+            if (ClosestPickup != null)
+            {
+                PickupItem();
             }
         }
 
@@ -104,5 +150,7 @@ public class Player : Person
         vel.z = hvel.z;
         
         vel = MoveAndSlide(vel, new Vector3(0, 1, 0), 0.05f, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
+
+        Animate(vel);
     }
 }

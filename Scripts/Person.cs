@@ -19,13 +19,18 @@ public enum CIV
 
 public class Person : KinematicBody
 {
+    //Animations
+    public static Dictionary<string, Animation> AttackAnimations = new Dictionary<string, Animation>();
+    public static string[] Animations = { "Punching", "Shooting_Pistol" };
+
     public static Weapon Punch = new Weapon()
     {
         IsMelee = true,
         Damage = 10
     };
-    public Area PunchArea;
     public List<Godot.Object> BodiesInPunchArea = new List<Godot.Object>();
+    public Area PunchArea;
+    public CollisionShape BodyCollisionShape;
 
     public float ACCEL = Resources.ACCEL;
     public float DEACCEL = Resources.DEACCEL;
@@ -36,7 +41,11 @@ public class Person : KinematicBody
     public float Pitch = 0;
     public float Yaw = 0;
     public float RotateSpeed = Resources.RotateSpeed;
-    public Vector3 InitScale;
+
+    //Pickups
+    public List<PickupArea> PickupsInArea = new List<PickupArea>();
+    public PickupArea ClosestPickup = null;
+    public PickupArea.REQ PickupRequirement = PickupArea.REQ.NON_PLAYER_ONLY;
 
     [Export]
     public STATE State = STATE.IDLE;
@@ -45,12 +54,11 @@ public class Person : KinematicBody
     [Export]
     public int Health = 100;
 
-    [Export]
-    private NodePath WeaponPath = null;
     public Weapon Weapon = null;
+    public RayCast BulletRay;
 
     [Export]
-    private NodePath WaypointPath = null;
+    public NodePath WaypointPath = null;
     public Spatial WayPointGroup = null;
     public Spatial WayPoint = null;
     
@@ -60,22 +68,40 @@ public class Person : KinematicBody
     public delegate void AIDelegate();
     private AIDelegate AI = null;
     
-    public AnimationPlayer Player;
+    //public AnimationPlayer Anim;
+    public AnimationTreePlayer AnimTree;
+
+    //Attacking
+    public bool CoolDown = false;
+
+    //Weapon nodes - change through ChangeWeapon()
+    private Spatial Pistol;
 
     public override void _Ready()
     {
-        InitScale = GetScale();
-        PunchArea = (Area)GetNode("Skeleton/HandCollision/Area");
+        Init();
 
-        if(WeaponPath != "")
-            Weapon = (Weapon)GetNode(WeaponPath);
-        if(WaypointPath != "")
+        if (WaypointPath != "")
             WayPointGroup = (Spatial)GetNode(WaypointPath);
         FindWayPoint();
-        
-        Player = (AnimationPlayer)GetNode("AnimationPlayer");
+    }
+
+    public void Init()
+    {
+        //load animations - do once
+        if (AttackAnimations.Count == 0)
+            foreach (var anim in Animations)
+                AttackAnimations.Add(anim, (Animation)GD.Load(Resources.PersonAnimationPath + anim + ".tres"));
+
+        Pistol = (Spatial)GetNode("Skeleton/HandAttachment/Pistol");
+
+        PunchArea = (Area)GetNode("Skeleton/HandAttachment/Area");
+        BodyCollisionShape = (CollisionShape)GetNode("CollisionShape");
+        BulletRay = (RayCast)GetNode("BulletRayCast");
+
+        //Anim = (AnimationPlayer)GetNode("AnimationPlayer");
+        AnimTree = (AnimationTreePlayer)GetNode("AnimationTreePlayer");
         ChangeState(State);
-        Player.SetCurrentAnimation("Idle");
     }
 
     public override void _PhysicsProcess(float delta)
@@ -117,9 +143,8 @@ public class Person : KinematicBody
         var movement = new Vector3(Mathf.Clamp(dist.x, -1, 1), 0, Mathf.Clamp(dist.z, -1, 1));
         MoveCharacter(delta, movement);
 
-        //make sure everything is unchanged
+        //makes sure everything is unchanged
         Orthonormalize();
-        SetScale(InitScale);
     }
 
     public virtual void MoveCharacter(float delta, Vector3 Movement)
@@ -127,6 +152,45 @@ public class Person : KinematicBody
         Movement = Movement.Normalized();
         vel = Movement;
         vel = MoveAndSlide(vel, new Vector3(0, 1, 0), 0.05f, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
+
+        Animate(vel);
+    }
+
+    public void Animate(Vector3 vel)
+    {
+        AnimTree.Blend2NodeSetAmount("Idle_Run", vel.Length() / WalkSpeed);
+    }
+
+    public void ChangeWeapon(Weapon newWeapon)
+    {
+        //hide weapon on person
+        if(Weapon != null)
+        {
+            switch (Weapon.Name)
+            {
+                case "Pistol":
+                    Pistol.Visible = false;
+                    break;
+            }
+        }
+
+        //show weapon on person and set correct animation
+        if (newWeapon == null)
+        {
+            AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Punching"]);
+        }
+        else
+        {
+            switch (newWeapon.Name)
+            {
+                case "Pistol":
+                    Pistol.Visible = true;
+                    AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_Pistol"]);
+                    break;
+            }
+        }
+
+        Weapon = newWeapon;
     }
 
     public void ChangeState(STATE newState)
@@ -151,7 +215,9 @@ public class Person : KinematicBody
                 WayPoint = DynamicWaypoint;
                 break;
             case STATE.DEATH:
-                Player.Play("Death");
+                AnimTree.TimeseekNodeSeek("Death_Seek", 0);
+                AnimTree.Blend2NodeSetAmount("Alive_Death", 1);
+                BodyCollisionShape.SetDisabled(true);
                 AI = null;
                 break;
             case STATE.PLAYER:
@@ -162,12 +228,12 @@ public class Person : KinematicBody
 
     private void AI_ForcedAnimation()
     {
-        //no changes
+        //TODO
     }
 
     private void AI_Idle()
     {
-
+        //TODO
     }
 
     private void AI_Combat()
@@ -187,7 +253,7 @@ public class Person : KinematicBody
         }
         else
         {
-            //get to shooting position
+            //TODO get to a shooting position
         }
 
         //if close enough then melee
@@ -207,20 +273,30 @@ public class Person : KinematicBody
 
     public void MainAttack()
     {
-        if (Weapon == null)
-        {
-            Punch.Attack();
-            Player.Play("Punching");
-        }
-        else
-        {
-            Weapon.Attack();
-        }
+        if (CoolDown == true)
+            return;
+
+        AnimTree.TimeseekNodeSeek("Attack_Seek", 0);
+        CoolDown = true;
     }
 
     public void SecondaryAttack()
     {
-        Weapon.Bash();
+        //TODO
+    }
+
+    public void Fire()
+    {
+        Weapon.Attack();
+        var other = BulletRay.GetCollider();
+        if(other is Person person)
+        {
+            person.TakeDamage(Weapon.Damage);
+        }
+        //TODO Add other colliders
+
+        var pos = BulletRay.GetCollisionPoint();
+        //TODO blood or something (Particals)
     }
 
     public void TakeDamage(int damage)
@@ -228,6 +304,11 @@ public class Person : KinematicBody
         Health -= damage;
         if (Health <= 0)
             ChangeState(STATE.DEATH);
+    }
+
+    public void CoolDownOver()
+    {
+        CoolDown = false;
     }
 
     public void CheckPunchHit()
@@ -241,9 +322,52 @@ public class Person : KinematicBody
         }
     }
 
+    public void PickupItem()
+    {
+        if(ClosestPickup.Requirement == PickupArea.REQ.ALL || ClosestPickup.Requirement == PickupRequirement)
+        {
+            var obj = ClosestPickup.Obj;
+            if (obj is Weapon weapon)
+            {
+                if(Weapon != null)
+                    Weapon.SetVisible(false);
+
+                var temp = (Weapon)GetNode("Skeleton/HandAttachment/" + weapon.Name);
+                temp.SetVisible(true);
+                temp.Copy(weapon);
+
+                if (Weapon == null)
+                {
+                    ClosestPickup.QueueFree();
+                }
+                else
+                {
+                    weapon.QueueFree();
+                    var scene2 = (PackedScene)GD.Load(Resources.ScenePath + Weapon.Name + ".tscn");
+                    var sceneInstance2 = scene2.Instance();
+                    sceneInstance2.SetName(Weapon.Name);
+                    ClosestPickup.AddChild(sceneInstance2);
+                }
+                
+                AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_" + weapon.Name]);
+                Weapon = temp;
+            }
+        }
+    }
+
+    public void CanPickup(PickupArea pickup)
+    {
+        PickupsInArea.Add(pickup);
+    }
+
+    public void CanNoLongerPickup(PickupArea pickup)
+    {
+        PickupsInArea.Remove(pickup);
+    }
+
     private void _on_Sight_body_entered(Godot.Object body)
     {
-        if (State == STATE.PLAYER)
+        if (State == STATE.PLAYER || State == STATE.DEATH || State == STATE.FORCEDANIMATION)
             return;
 
         if (body is Person other)
