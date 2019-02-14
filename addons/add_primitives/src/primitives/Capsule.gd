@@ -62,21 +62,21 @@ func update():
 		add_quad([circle[0] + h, h, -h, circle[0] - h])
 		add_quad([h, circle[sides] + h, circle[sides] - h, -h])
 		
-		var r = 0
-		var p = Vector3(0, height + ch, 0)
+		var r2 = 0
+		var p2 = Vector3(0, height + ch, 0)
 		
 		for i in range(height_segments/2):
 			var nr = sin(angle * (i + 1))
 			var np = Vector3(0, cos(angle * (i + 1)) * ch + height, 0)
 			
-			add_tri([h, circle[0] * nr + np, circle[0] * r + p])
-			add_tri([h, circle[sides] * r + p, circle[sides] * nr + np])
+			add_tri([h, circle[0] * nr + np, circle[0] * r2 + p2])
+			add_tri([h, circle[sides] * r2 + p2, circle[sides] * nr + np])
 			
-			add_tri([-h, circle[0] * r - p, circle[0] * nr - np])
-			add_tri([-h, circle[sides] * nr - np, circle[sides] * r - p])
+			add_tri([-h, circle[0] * r2 - p2, circle[0] * nr - np])
+			add_tri([-h, circle[sides] * nr - np, circle[sides] * r2 - p2])
 			
-			r = nr
-			p = np
+			r2 = nr
+			p2 = np
 			
 	commit()
 	

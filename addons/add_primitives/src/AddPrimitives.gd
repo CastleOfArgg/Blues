@@ -41,7 +41,7 @@ class DirectoryUtilities extends Directory:
 			
 			while next:
 				if not current_is_dir():
-					if extension != '' and next.extension() == extension:
+					if extension != '' and next.get_extension() == extension:
 						list.push_back(next)
 						
 					else:
@@ -157,7 +157,9 @@ func _load_modules():
 	
 	for m in mods:
 		var module = load(path.plus_file(m))
-		
+		print(module)
+		print(module.has_method("get_name"))
+		print(module.has_method("new"))
 		modules[module.get_name()] = module.new(plugin)
 		
 func _update_menu():
@@ -167,7 +169,7 @@ func _update_menu():
 	primitives.clear()
 	
 	for c in popup_menu.get_children():
-		if c extends PopupMenu:
+		if c is PopupMenu:
 			c.free()
 			
 	var submenus = {}
@@ -206,7 +208,7 @@ func _update_menu():
 			var submenu = PopupMenu.new()
 			submenu.set_name(sub)
 			popup_menu.add_child(submenu)
-			submenu.connect("item_pressed", self, "_popup_signal", [submenu])
+			submenu.connect("id_pressed", self, "_popup_signal", [submenu])
 			
 			popup_menu.add_submenu_item(sub.capitalize(), sub)
 			
@@ -383,7 +385,7 @@ func _init(plugin):
 	add_child(spatial_menu)
 	
 	popup_menu = spatial_menu.get_popup()
-	popup_menu.connect("item_pressed", self, "_popup_signal", [popup_menu])
+	popup_menu.connect("id_pressed", self, "_popup_signal", [popup_menu])
 	
 	connect("visibility_changed", self, "_visibility_changed")
 	

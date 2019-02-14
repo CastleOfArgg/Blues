@@ -523,9 +523,9 @@ class PolygonDialog extends AcceptDialog:
 			canvas.draw_line(knife_start, knife_end, Color(), 3)
 			canvas.draw_line(knife_start, knife_end, Color(0.8, 0.8, 0.8), 1)
 			
-			var s = Vector2(8, 8)
-			canvas.draw_rect(Rect2(knife_start - s/2, s), Color(0, 1, 0))
-			canvas.draw_rect(Rect2(knife_end - s/2, s), Color(0, 1, 0))
+			var s2 = Vector2(8, 8)
+			canvas.draw_rect(Rect2(knife_start - s2/2, s2), Color(0, 1, 0))
+			canvas.draw_rect(Rect2(knife_end - s2/2, s2), Color(0, 1, 0))
 			
 		for i in range(polygon.size()):
 			canvas.draw_texture(handle, polygon[i] - handle_offset, Color(1, 1, 1));
@@ -661,9 +661,9 @@ class PolygonDialog extends AcceptDialog:
 		snap_popup = PopupPanel.new()
 		snap_popup.set_size(Vector2(180, 40))
 		
-		var hb = HBoxContainer.new()
-		snap_popup.add_child(hb)
-		hb.set_area_as_parent_rect(get_constant("margin", "Dialogs"))
+		var hb2 = HBoxContainer.new()
+		snap_popup.add_child(hb2)
+		hb2.set_area_as_parent_rect(get_constant("margin", "Dialogs"))
 		
 		l = Label.new()
 		l.set_text("x")
@@ -675,8 +675,8 @@ class PolygonDialog extends AcceptDialog:
 		x.set_suffix('px')
 		x.set_h_size_flags(SIZE_EXPAND_FILL)
 		
-		hb.add_child(l)
-		hb.add_child(x)
+		hb2.add_child(l)
+		hb2.add_child(x)
 		
 		l = Label.new()
 		l.set_text("y")
@@ -688,8 +688,8 @@ class PolygonDialog extends AcceptDialog:
 		y.set_suffix('px')
 		y.set_h_size_flags(SIZE_EXPAND_FILL)
 		
-		hb.add_child(l)
-		hb.add_child(y)
+		hb2.add_child(l)
+		hb2.add_child(y)
 		
 		x.connect("value_changed", self, "set_grid_step", [Vector3.AXIS_X])
 		y.connect("value_changed", self, "set_grid_step", [Vector3.AXIS_Y])

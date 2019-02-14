@@ -68,7 +68,7 @@ func get_selected():
 	return null
 	
 func _find_node(type, node):
-	if node.is_type(type):
+	if node == null or node.is_class(type):
 		return node
 		
 	for i in range(node.get_child_count()):
