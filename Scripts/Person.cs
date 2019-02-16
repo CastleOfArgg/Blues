@@ -19,10 +19,6 @@ public enum CIV
 
 public class Person : KinematicBody
 {
-    //Animations
-    public static Dictionary<string, Animation> AttackAnimations = new Dictionary<string, Animation>();
-    public static string[] Animations = { "Punching", "Shooting_Pistol" };
-
     public static Weapon Punch = new Weapon()
     {
         IsMelee = true,
@@ -58,7 +54,7 @@ public class Person : KinematicBody
     public RayCast BulletRay;
 
     [Export]
-    public NodePath WaypointPath = null;
+    public NodePath WaypointPath = "";
     public Spatial WayPointGroup = null;
     public Spatial WayPoint = null;
     
@@ -67,9 +63,13 @@ public class Person : KinematicBody
 
     public delegate void AIDelegate();
     private AIDelegate AI = null;
-    
+
     //public AnimationPlayer Anim;
-    public AnimationTreePlayer AnimTree;
+    //public AnimationTreePlayer AnimTree;
+    public AnimationTree AnimTree;
+    public AnimationNodeStateMachinePlayback StateMachine;
+    public RayCast LeftFootRayCast;
+    public RayCast RightFootRayCast;
 
     //Attacking
     public bool CoolDown = false;
@@ -88,20 +88,18 @@ public class Person : KinematicBody
 
     public void Init()
     {
-        //load animations - do once
-        if (AttackAnimations.Count == 0)
-            foreach (var anim in Animations)
-                AttackAnimations.Add(anim, (Animation)GD.Load(Resources.PersonAnimationPath + anim + ".tres"));
-
         Pistol = (Spatial)GetNode("Skeleton/HandAttachment/Pistol");
 
         PunchArea = (Area)GetNode("Skeleton/HandAttachment/Area");
         BodyCollisionShape = (CollisionShape)GetNode("CollisionShape");
         BulletRay = (RayCast)GetNode("BulletRayCast");
-
-        //Anim = (AnimationPlayer)GetNode("AnimationPlayer");
-        AnimTree = (AnimationTreePlayer)GetNode("AnimationTreePlayer");
+        
+        AnimTree = (AnimationTree)GetNode("AnimationTree");
+        StateMachine = (AnimationNodeStateMachinePlayback)AnimTree.Get("parameters/playback");
         ChangeState(State);
+
+        LeftFootRayCast = (RayCast)GetNode("Skeleton/LeftFootAttachment/RayCast");
+        RightFootRayCast = (RayCast)GetNode("Skeleton/RightFootAttachment/RayCast");
     }
 
     public override void _PhysicsProcess(float delta)
@@ -145,20 +143,23 @@ public class Person : KinematicBody
 
         //makes sure everything is unchanged
         Orthonormalize();
+
+        AnimTree.Advance(delta);
     }
 
     public virtual void MoveCharacter(float delta, Vector3 Movement)
     {
         Movement = Movement.Normalized();
         vel = Movement;
-        vel = MoveAndSlide(vel, new Vector3(0, 1, 0), 0.05f, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
+        vel = MoveAndSlide(vel, new Vector3(0, 1, 0), false, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
 
         Animate(vel);
     }
 
     public void Animate(Vector3 vel)
     {
-        AnimTree.Blend2NodeSetAmount("Idle_Run", vel.Length() / WalkSpeed);
+        //AnimTree.Blend2NodeSetAmount("Idle_Run", vel.Length() / WalkSpeed);
+        AnimTree.Set("parameters/Idle_Walk/Idle_Walk/blend_position", new Vector2(vel.z, vel.x));
     }
 
     public void ChangeWeapon(Weapon newWeapon)
@@ -177,7 +178,7 @@ public class Person : KinematicBody
         //show weapon on person and set correct animation
         if (newWeapon == null)
         {
-            AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Punching"]);
+            //AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Punching"]);
         }
         else
         {
@@ -185,7 +186,7 @@ public class Person : KinematicBody
             {
                 case "Pistol":
                     Pistol.Visible = true;
-                    AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_Pistol"]);
+                    //AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_Pistol"]);
                     break;
             }
         }
@@ -215,8 +216,7 @@ public class Person : KinematicBody
                 WayPoint = DynamicWaypoint;
                 break;
             case STATE.DEATH:
-                AnimTree.TimeseekNodeSeek("Death_Seek", 0);
-                AnimTree.Blend2NodeSetAmount("Alive_Death", 1);
+                StateMachine.Travel("Death");
                 BodyCollisionShape.SetDisabled(true);
                 AI = null;
                 break;
@@ -275,8 +275,9 @@ public class Person : KinematicBody
     {
         if (CoolDown == true)
             return;
-
-        AnimTree.TimeseekNodeSeek("Attack_Seek", 0);
+        
+        AnimTree.Set("parameters/Idle_Walk/Move_Attack/blend_amount", 1);
+        AnimTree.Set("parameters/Idle_Walk/Attack_Seek/seek_position", 0);
         CoolDown = true;
     }
 
@@ -349,7 +350,7 @@ public class Person : KinematicBody
                     ClosestPickup.AddChild(sceneInstance2);
                 }
                 
-                AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_" + weapon.Name]);
+                AnimTree.Set("parameters/Idle_Walk/Punch_Shoot/blend_amount", 1);
                 Weapon = temp;
             }
         }

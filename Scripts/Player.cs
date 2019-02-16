@@ -149,7 +149,7 @@ public class Player : Person
         vel.y = hvel.y;
         vel.z = hvel.z;
         
-        vel = MoveAndSlide(vel, new Vector3(0, 1, 0), 0.05f, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
+        vel = MoveAndSlide(vel, new Vector3(0, 1, 0), false, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
 
         Animate(vel);
     }

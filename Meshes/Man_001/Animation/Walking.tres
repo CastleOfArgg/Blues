@@ -5,7 +5,6 @@
 resource_name = "default"
 length = 0.866667
 loop = true
-step = 0.1
 tracks/0/type = "transform"
 tracks/0/path = NodePath("Skeleton:mixamorig_Head")
 tracks/0/interp = 1
