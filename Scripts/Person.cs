@@ -165,7 +165,7 @@ public class Person : KinematicBody
     public void ChangeWeapon(Weapon newWeapon)
     {
         //hide weapon on person
-        if(Weapon != null)
+        if (Weapon != null)
         {
             switch (Weapon.Name)
             {
@@ -178,15 +178,15 @@ public class Person : KinematicBody
         //show weapon on person and set correct animation
         if (newWeapon == null)
         {
-            //AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Punching"]);
+            AnimTree.Set("parameters/Idle_Walk/Punch_Shoot/blend_amount", 0);
         }
         else
         {
+            AnimTree.Set("parameters/Idle_Walk/Punch_Shoot/blend_amount", 1);
             switch (newWeapon.Name)
             {
                 case "Pistol":
                     Pistol.Visible = true;
-                    //AnimTree.AnimationNodeSetAnimation("Attack", AttackAnimations["Shooting_Pistol"]);
                     break;
             }
         }
