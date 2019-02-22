@@ -94,6 +94,9 @@ Reload={
 
 3d_physics/layer_1="Meshes"
 3d_physics/layer_2="Actors"
+3d_physics/layer_3="Pickups"
+3d_physics/layer_4="Projectiles"
+3d_physics/layer_5="BodyParts"
 
 [rendering]
 

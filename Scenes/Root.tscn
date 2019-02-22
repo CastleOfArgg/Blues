@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=2]
+[gd_scene load_steps=15 format=2]
 
 [ext_resource path="res://Scripts/Level.cs" type="Script" id=1]
 [ext_resource path="res://Meshes/Ground/Ground03_col.jpg" type="Texture" id=2]
@@ -6,6 +6,7 @@
 [ext_resource path="res://Scripts/Player.cs" type="Script" id=4]
 [ext_resource path="res://Scenes/PickupArea.tscn" type="PackedScene" id=5]
 [ext_resource path="res://Scenes/Pistol.tscn" type="PackedScene" id=6]
+[ext_resource path="res://Scenes/Bow.tscn" type="PackedScene" id=7]
 
 [sub_resource type="BoxShape" id=1]
 
@@ -55,6 +56,7 @@ __meta__ = {
 LevelName = "Root"
 
 [node name="Scenery" type="Spatial" parent="."]
+editor/display_folded = true
 __meta__ = {
 "_edit_lock_": true
 }
@@ -84,6 +86,7 @@ mesh = SubResource( 5 )
 material/0 = null
 
 [node name="Linear Stair" type="MeshInstance" parent="Scenery"]
+editor/display_folded = true
 transform = Transform( 2.2697, 0, 0, 0, 1.84793, 0, 0, 0, 2.34847, -2.3041, 0, 5.14061 )
 mesh = SubResource( 6 )
 material/0 = null
@@ -113,6 +116,7 @@ transform = Transform( 10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0 )
 
 [node name="Player" parent="Characters" instance=ExtResource( 3 )]
 script = ExtResource( 4 )
+State = 0
 Civ = 1
 
 [node name="Camera" type="Camera" parent="Characters/Player"]
@@ -130,9 +134,14 @@ current = true
 [node name="Pickups" type="Spatial" parent="."]
 editor/display_folded = true
 
-[node name="PickupArea" parent="Pickups" instance=ExtResource( 5 )]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.39778, 0, 1.09175 )
+[node name="PistolPickup" parent="Pickups" instance=ExtResource( 5 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.39778, 0.00460744, 1.09175 )
 
-[node name="Pistol" parent="Pickups/PickupArea" instance=ExtResource( 6 )]
+[node name="Pistol" parent="Pickups/PistolPickup" instance=ExtResource( 6 )]
 transform = Transform( 0.02, 0, 0, 0, 0.02, 0, 0, 0, 0.02, 0, 0, 0 )
+
+[node name="BowPickup" parent="Pickups" instance=ExtResource( 5 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 3.08846, 0.0493987, 1.09175 )
+
+[node name="Bow" parent="Pickups/BowPickup" instance=ExtResource( 7 )]
 

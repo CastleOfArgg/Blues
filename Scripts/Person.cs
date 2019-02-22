@@ -2,23 +2,23 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-public enum STATE
-{
-    PLAYER,
-    FORCEDANIMATION,
-    IDLE,
-    COMBAT,
-    DEATH
-}
-
-public enum CIV
-{
-    French,
-    Huran,
-}
-
 public class Person : KinematicBody
 {
+    public enum STATE
+    {
+        PLAYER,
+        FORCEDANIMATION,
+        IDLE,
+        COMBAT,
+        DEATH
+    }
+
+    public enum CIV
+    {
+        French,
+        Huran,
+    }
+
     public static Weapon Punch = new Weapon()
     {
         IsMelee = true,
@@ -63,18 +63,18 @@ public class Person : KinematicBody
 
     public delegate void AIDelegate();
     private AIDelegate AI = null;
-
-    //public AnimationPlayer Anim;
-    //public AnimationTreePlayer AnimTree;
+    
     public AnimationTree AnimTree;
     public AnimationNodeStateMachinePlayback StateMachine;
-    public RayCast LeftFootRayCast;
-    public RayCast RightFootRayCast;
+    //public RayCast LeftFootRayCast;
+    //public RayCast RightFootRayCast;
 
     //Attacking
     public bool CoolDown = false;
 
     //Weapon nodes - change through ChangeWeapon()
+    private Spatial Bow;
+    private Spatial Arrow;
     private Spatial Pistol;
 
     public override void _Ready()
@@ -88,9 +88,11 @@ public class Person : KinematicBody
 
     public void Init()
     {
-        Pistol = (Spatial)GetNode("Skeleton/HandAttachment/Pistol");
+        Bow = (Spatial)GetNode("Skeleton/LeftHandAttachment/Bow");
+        Arrow = (Spatial)GetNode("Skeleton/RightHandAttachment/Arrow");
+        Pistol = (Spatial)GetNode("Skeleton/RightHandAttachment/Pistol");
 
-        PunchArea = (Area)GetNode("Skeleton/HandAttachment/Area");
+        PunchArea = (Area)GetNode("Skeleton/RightHandAttachment/Area");
         BodyCollisionShape = (CollisionShape)GetNode("CollisionShape");
         BulletRay = (RayCast)GetNode("BulletRayCast");
         
@@ -98,8 +100,8 @@ public class Person : KinematicBody
         StateMachine = (AnimationNodeStateMachinePlayback)AnimTree.Get("parameters/playback");
         ChangeState(State);
 
-        LeftFootRayCast = (RayCast)GetNode("Skeleton/LeftFootAttachment/RayCast");
-        RightFootRayCast = (RayCast)GetNode("Skeleton/RightFootAttachment/RayCast");
+        //LeftFootRayCast = (RayCast)GetNode("Skeleton/LeftFootAttachment/RayCast");
+        //RightFootRayCast = (RayCast)GetNode("Skeleton/RightFootAttachment/RayCast");
     }
 
     public override void _PhysicsProcess(float delta)
@@ -151,14 +153,13 @@ public class Person : KinematicBody
     {
         Movement = Movement.Normalized();
         vel = Movement;
-        vel = MoveAndSlide(vel, new Vector3(0, 1, 0), false, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
+        vel = MoveAndSlide(vel, Resources.CharacterGravity, false, 4, Mathf.Deg2Rad(Resources.MAX_SLOPE_ANGLE));
 
         Animate(vel);
     }
 
     public void Animate(Vector3 vel)
     {
-        //AnimTree.Blend2NodeSetAmount("Idle_Run", vel.Length() / WalkSpeed);
         AnimTree.Set("parameters/Idle_Walk/Idle_Walk/blend_position", new Vector2(vel.z, vel.x));
     }
 
@@ -167,8 +168,18 @@ public class Person : KinematicBody
         //hide weapon on person
         if (Weapon != null)
         {
+            AnimTree.Set("parameters/Idle_Walk/Move_Draw/blend_amount", 0);
+            AnimTree.Set("parameters/Idle_Walk/Draw_Seek/seek_position", 100);
+            Weapon.IsDrawn = true;
+
+            if (Weapon.ProjectileType != Projectile.Type.None)
+                ShowProjectile(false);
+
             switch (Weapon.Name)
             {
+                case "Bow":
+                    Bow.Visible = false;
+                    break;
                 case "Pistol":
                     Pistol.Visible = false;
                     break;
@@ -183,9 +194,15 @@ public class Person : KinematicBody
         else
         {
             AnimTree.Set("parameters/Idle_Walk/Punch_Shoot/blend_amount", 1);
+            AnimTree.Set("parameters/Idle_Walk/Attack_Seek/seek_position", 100);
             switch (newWeapon.Name)
             {
+                case "Bow":
+                    AnimTree.Set("parameters/Idle_Walk/Pistol_Bow/blend_amount", 1);
+                    Bow.Visible = true;
+                    break;
                 case "Pistol":
+                    AnimTree.Set("parameters/Idle_Walk/Pistol_Bow/blend_amount", 0);
                     Pistol.Visible = true;
                     break;
             }
@@ -271,12 +288,37 @@ public class Person : KinematicBody
         WayPoint = (Spatial)WayPointGroup.GetChildren()[0];
     }
 
+    public void DrawWeapon()
+    {
+        if (CoolDown)
+            return;
+
+
+        AnimTree.Set("parameters/Idle_Walk/Move_Attack/blend_amount", 1);
+        if (Weapon != null && Weapon.MustDraw)
+        {
+            AnimTree.Set("parameters/Idle_Walk/Move_Draw/blend_amount", 1);
+            AnimTree.Set("parameters/Idle_Walk/Draw_Seek/seek_position", 0);
+        }
+    }
+
+    public void ShowProjectile(bool vis)
+    {
+        switch (Weapon.ProjectileType)
+        {
+            case Projectile.Type.Arrow:
+                Arrow.Visible = vis;
+                break;
+        }
+    }
+
     public void MainAttack()
     {
-        if (CoolDown == true)
+        if (CoolDown || (Weapon != null && !Weapon.IsDrawn))
             return;
-        
-        AnimTree.Set("parameters/Idle_Walk/Move_Attack/blend_amount", 1);
+
+
+        AnimTree.Set("parameters/Idle_Walk/Move_Draw/blend_amount", 0);
         AnimTree.Set("parameters/Idle_Walk/Attack_Seek/seek_position", 0);
         CoolDown = true;
     }
@@ -289,8 +331,41 @@ public class Person : KinematicBody
     public void Fire()
     {
         Weapon.Attack();
-        var other = BulletRay.GetCollider();
-        if(other is Person person)
+        if (Weapon.ProjectileType != Projectile.Type.None)
+        {
+            //put projectile in game
+            var scene2 = (PackedScene)GD.Load(Resources.ScenePath + Weapon.ProjectileType.ToString() + ".tscn");
+            var sceneInstance2 = (Projectile)scene2.Instance();
+            var scale = sceneInstance2.Scale;
+            Globals.Instance.CurrentLevel.GetNode("Projectiles").AddChild(sceneInstance2);
+            var offset = Globals.GetRotationFrom(Resources.ProjectileOffset, BulletRay.GlobalTransform.basis.GetEuler());
+            sceneInstance2.Transform = new Transform(BulletRay.GlobalTransform.basis, BulletRay.GlobalTransform.origin + offset);
+
+            //
+            Vector3 forceSource = BulletRay.GlobalTransform.basis.GetEuler();
+            var bowPosition = new Vector3(sceneInstance2.GlobalTransform.origin) { y = 0 };
+            var hitPosition = Globals.GetRotationFrom(BulletRay.CastTo, BulletRay.GlobalTransform.basis.GetEuler());
+            if (BulletRay.IsColliding())
+                hitPosition = new Vector3(BulletRay.GetCollisionPoint()) { y = 0 };
+            forceSource.y = Mathf.Atan2(-(bowPosition.x - hitPosition.x), -(bowPosition.z - hitPosition.z));
+
+            //apply force to projectile
+            var force = Globals.GetRotationFrom(Resources.ProjectileImpulse, forceSource);
+            sceneInstance2.ApplyCentralImpulse(force);
+            sceneInstance2.Scale = scale * 10;
+            sceneInstance2.Damage = Weapon.Damage;
+            sceneInstance2.Firer = this;
+            GD.Print(BulletRay.GetCollisionPoint().DistanceTo(GlobalTransform.origin));
+            if (BulletRay.GetCollisionPoint().DistanceTo(GlobalTransform.origin) <= Resources.TooCloseDistance)
+                sceneInstance2.IsTooClose = true;
+            return;
+        }
+
+        var other = (Spatial)BulletRay.GetCollider();
+        if (other == null)
+            return;
+
+        if (other.GetParent().GetParent().GetParent() is Person person)
         {
             person.TakeDamage(Weapon.Damage);
         }
@@ -314,11 +389,13 @@ public class Person : KinematicBody
 
     public void CheckPunchHit()
     {
+        List<System.Object> alreadyHit = new List<object>();
         foreach (var body in BodiesInPunchArea)
         {
-            if(body is Person person)
+            if(((Spatial)body).GetParent().GetParent().GetParent() is Person person && !alreadyHit.Contains(person))
             {
                 person.TakeDamage(Punch.Damage);
+                alreadyHit.Add(person);
             }
         }
     }
@@ -333,7 +410,11 @@ public class Person : KinematicBody
                 if(Weapon != null)
                     Weapon.SetVisible(false);
 
-                var temp = (Weapon)GetNode("Skeleton/HandAttachment/" + weapon.Name);
+                Weapon temp;
+                if(weapon.MustDraw)
+                    temp = (Weapon)GetNode("Skeleton/LeftHandAttachment/" + weapon.Name);
+                else
+                    temp = (Weapon)GetNode("Skeleton/RightHandAttachment/" + weapon.Name);
                 temp.SetVisible(true);
                 temp.Copy(weapon);
 
@@ -348,10 +429,11 @@ public class Person : KinematicBody
                     var sceneInstance2 = scene2.Instance();
                     sceneInstance2.SetName(Weapon.Name);
                     ClosestPickup.AddChild(sceneInstance2);
+                    ClosestPickup.Reset();
+                    ClosestPickup.Obj.Scale = Weapon.Scale * 10;
                 }
-                
-                AnimTree.Set("parameters/Idle_Walk/Punch_Shoot/blend_amount", 1);
-                Weapon = temp;
+
+                ChangeWeapon(temp);
             }
         }
     }
@@ -381,18 +463,31 @@ public class Person : KinematicBody
         }
     }
 	
-	private void _on_HandArea_body_entered(Godot.Object body)
+	private void _on_HandArea_area_entered(Godot.Object body)
     {
         BodiesInPunchArea.Add(body);
     }
 
-    private void _on_HandArea_body_exited(Godot.Object body)
+    private void _on_HandArea_area_exited(Godot.Object body)
     {
         BodiesInPunchArea.Remove(body);
     }
+
+    private void _on_Area_area_entered(object bodyObj, string bone)
+    {
+        var body = (Spatial)bodyObj;
+        
+        if (body.GetParent() is Projectile proj && proj.HasCollision)
+        {
+            if (proj.IsTooClose && proj.Firer == this)
+                return;
+            GD.Print(proj.IsTooClose);
+            GD.Print(proj.Firer);
+            GD.Print(this);
+            proj.PutInObject((Spatial)GetNode("Skeleton").GetNode(bone + "Attachment").GetNode("Area"));
+            TakeDamage(proj.Damage);
+            proj.QueueFree();
+        }
+    }
 }
-
-
-
-
 

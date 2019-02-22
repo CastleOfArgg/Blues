@@ -101,6 +101,8 @@ public class Player : Person
         }
 
         if (@event.IsActionPressed("Attack"))
+            DrawWeapon();
+        if (@event.IsActionReleased("Attack"))
             MainAttack();
         if (@event.IsActionPressed("Bash"))
             SecondaryAttack();
@@ -134,7 +136,7 @@ public class Player : Person
         pos = pos.Normalized();
 
         var hvel = vel;
-        hvel.y = -1f;
+        hvel += Resources.CharacterGravity;
 
         var speed = RunSpeed;
         if (IsWalking)

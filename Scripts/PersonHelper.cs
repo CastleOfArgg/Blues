@@ -30,4 +30,9 @@ public class PersonHelper : Spatial
     {
         Parent.CoolDownOver();
     }
+
+    public void ShowProjectile(bool vis)
+    {
+        Parent.ShowProjectile(vis);
+    }
 }

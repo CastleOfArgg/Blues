@@ -17,6 +17,11 @@ public class PickupArea : Area
 
     public override void _Ready()
     {
+        Reset();
+    }
+
+    public void Reset()
+    {
         Obj = (Spatial)GetChild(GetChildCount() - 1);
     }
 

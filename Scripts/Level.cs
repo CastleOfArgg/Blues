@@ -11,5 +11,9 @@ public class Level : Spatial
         Globals.Instance.CurrentLevel = this;
         if (LevelName == "")
             GD.Print("LEVEL NAME MISSING!");
+
+        var ProjectilesSpatial = new Spatial();
+        ProjectilesSpatial.SetName("Projectiles");
+        AddChild(ProjectilesSpatial);
     }
 }

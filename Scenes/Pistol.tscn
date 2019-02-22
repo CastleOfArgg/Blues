@@ -111,7 +111,7 @@ bones/0/enabled = true
 bones/0/bound_children = [  ]
 
 [node name="Cube.001" type="MeshInstance" parent="Armature/Skeleton"]
-transform = Transform( 1, 0, 5.58794e-009, 2.98023e-008, 1, 7.45058e-009, -1.86265e-009, 0, 1, 0, 0, 0 )
+transform = Transform( 1, -4.47035e-008, 9.31323e-009, 4.47035e-008, 1, -1.49012e-008, -9.31323e-009, 1.49012e-008, 1, 1.98964, 0.400584, 0.140254 )
 use_in_baked_light = true
 mesh = SubResource( 1 )
 material/0 = null
